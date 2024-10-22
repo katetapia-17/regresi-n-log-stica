@@ -21,8 +21,8 @@ df.dropna(inplace=True)
 # Si hay variables categóricas, convertirlas en numéricas
 df = pd.get_dummies(df, drop_first=True)
 
-# Definir X (todas las columnas menos la columna objetivo) e y (la variable objetivo)
-X = df.drop("condition", axis=1)  # Cambia 'target' por el nombre correcto de la columna si es diferente
+# Definir X y Y
+X = df.drop("condition", axis=1)
 y = df["condition"]
 
 from sklearn.model_selection import train_test_split
