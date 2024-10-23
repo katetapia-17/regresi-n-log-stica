@@ -1,60 +1,54 @@
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
 
 # Cargar el dataset
 df = pd.read_csv("heart_cleveland_upload.csv")
 
-# Mostrar las primeras filas para revisar
-df.head()
-
-# Información general del dataset
-df.info()
-
-# Resumen estadístico
-df.describe()
-
-# Verificar si hay valores nulos
-df.isnull().sum()
-
-# Si hay valores nulos, eliminarlos
-df.dropna(inplace=True)
-
-# Si hay variables categóricas, convertirlas en numéricas
-df = pd.get_dummies(df, drop_first=True)
-
-# Definir X y Y
+# Definir las variables predictoras (X) y la variable objetivo (y)
 X = df.drop("condition", axis=1)
 y = df["condition"]
 
-from sklearn.model_selection import train_test_split
-
-# Dividir los datos en entrenamiento (80%) y prueba (20%)
+# Dividir el dataset en entrenamiento y prueba
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-from sklearn.linear_model import LinearRegression
+# Escalar los datos
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
-# Crear el modelo de Regresión Lineal
-model = LinearRegression()
+# Crear el modelo de Regresión Logística
+model = LogisticRegression(max_iter=200)  # Aumentar el número de iteraciones
+model.fit(X_train_scaled, y_train)
 
-# Entrenar el modelo con los datos de entrenamiento
-model.fit(X_train, y_train)
+# Realizar predicciones
+y_pred = model.predict(X_test_scaled)
 
-from sklearn.metrics import mean_squared_error, r2_score
-
-# Hacer predicciones con los datos de prueba
-y_pred = model.predict(X_test)
-
-# Evaluar el desempeño del modelo
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-
-print(f"Mean Squared Error: {mse}")
-print(f"R² Score: {r2}")
+# Evaluar el modelo
+print(f"Precisión: {accuracy_score(y_test, y_pred)}")
+print(classification_report(y_test, y_pred))
 
 import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, roc_auc_score
 
-# Graficar los valores predichos vs. los reales
-plt.scatter(y_test, y_pred)
-plt.xlabel("Valores Reales")
-plt.ylabel("Valores Predichos")
-plt.title("Regresión Lineal: Valores Reales vs. Predichos")
+# Obtener las probabilidades predichas para la clase 1
+y_pred_prob = model.predict_proba(X_test_scaled)[:, 1]
+
+# Calcular la curva ROC
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_prob)
+
+# Calcular el AUC (Área bajo la curva)
+auc_score = roc_auc_score(y_test, y_pred_prob)
+
+# Graficar la curva ROC
+plt.figure(figsize=(8,6))
+plt.plot(fpr, tpr, label=f'ROC curve (AUC = {auc_score:.2f})')
+plt.plot([0, 1], [0, 1], 'k--', label='Random guess')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Curva ROC para el Modelo de Regresión Logística')
+plt.legend(loc='best')
+plt.grid(True)
 plt.show()
